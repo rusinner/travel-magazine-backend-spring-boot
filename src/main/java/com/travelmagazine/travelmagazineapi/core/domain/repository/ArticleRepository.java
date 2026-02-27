@@ -11,4 +11,6 @@ public interface ArticleRepository {
     List<Article> findAll();
     void deleteById(Long id);
     boolean existsById(Long id);
+    List<Article> findByCategorySlug(String categorySlug);
+    List<Article> searchByTitle(String keyword);
 }

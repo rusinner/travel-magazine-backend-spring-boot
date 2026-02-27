@@ -4,9 +4,12 @@ import com.travelmagazine.travelmagazineapi.infrastructure.persistence.entity.Ar
 import org.springframework.data.jpa.repository.JpaRepository; // Το import για το Spring Data
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface JpaArticleRepository extends JpaRepository<ArticleEntity, Long> {
     Optional<ArticleEntity> findBySlug(String slug);
+    List<ArticleEntity> findByCategorySlug(String slug);
+    List<ArticleEntity> findByTitleContainingIgnoreCase(String title);
 }

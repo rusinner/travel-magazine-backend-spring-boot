@@ -4,6 +4,7 @@ import com.travelmagazine.travelmagazineapi.core.domain.model.Article;
 import com.travelmagazine.travelmagazineapi.core.domain.model.User;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.ArticleRepository;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.UserRepository;
+import com.travelmagazine.travelmagazineapi.core.domain.service.ArticleSecurityService; // Προσθήκη
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,33 +13,18 @@ import org.springframework.stereotype.Service;
 public class GetProtectedArticleUseCase {
     private final ArticleRepository articleRepository;
     private final UserRepository userRepository;
+    private final ArticleSecurityService articleSecurityService; // Προσθήκη
 
     public Article execute(String slug, Long currentUserId) {
+        // 1. Φέρνουμε το άρθρο
         Article article = articleRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Article not found"));
 
-        // ΚΑΝΟΝΑΣ 1: Αν ο συγγραφέας το άφησε FREE, το βλέπουν όλοι (Guest & Users)
-        if (!article.isPremium()) {
-            return article;
-        }
+        // 2. Εντοπίζουμε τον χρήστη (αν υπάρχει)
+        User user = (currentUserId != null) ? userRepository.findById(currentUserId).orElse(null) : null;
 
-        // ΚΑΝΟΝΑΣ 2: Αν είναι Premium, πρέπει να δούμε ΠΟΙΟΣ είναι
-        if (currentUserId == null) {
-            article.setContent("🔒 This is a Premium article. Please log in to read more.");
-            return article;
-        }
-
-        User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // ΚΑΝΟΝΑΣ 3: ΔΙΟΡΘΩΜΕΝΟΣ ΕΛΕΓΧΟΣ
-        // Χρησιμοποιούμε .name() γιατί το subscriptionTier και το role είναι Enums
-        boolean isPro = "PRO".equals(user.getSubscriptionTier().name());
-        boolean isAdmin = "ADMIN".equals(user.getRole().name());
-
-        if (!isPro && !isAdmin) {
-            article.setContent("🔒 This content is for PRO members only. Upgrade your plan to gain access.");
-        }
+        // 3. Η ΜΑΓΙΚΗ ΓΡΑΜΜΗ: Ο "φύλακας" εφαρμόζει τους κανόνες για ένα άρθρο
+        articleSecurityService.filterArticleContent(article, user);
 
         return article;
     }

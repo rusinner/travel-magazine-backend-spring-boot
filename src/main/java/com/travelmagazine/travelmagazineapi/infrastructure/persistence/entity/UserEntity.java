@@ -4,10 +4,13 @@ import com.travelmagazine.travelmagazineapi.core.domain.model.enums.Subscription
 import com.travelmagazine.travelmagazineapi.core.domain.model.enums.UserRole;
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDateTime; // Απαραίτητο import
 
 @Entity
 @Table(name = "users")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+@Data // Περιλαμβάνει Getter, Setter, RequiredArgsConstructor, ToString, EqualsAndHashCode
+@NoArgsConstructor
+@AllArgsConstructor
 public class UserEntity {
 
     @Id
@@ -23,11 +26,16 @@ public class UserEntity {
     @Column(nullable = false)
     private String fullName;
 
-    @Enumerated(EnumType.STRING) // Αποθήκευση ως String στη DB
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private SubscriptionTier subscriptionTier; // Μετονόμασέ το για να ταιριάζει με το Domain
+    @Column(nullable = false, name = "subscription_tier") // Καλή πρακτική για τη DB
+    private SubscriptionTier subscriptionTier;
+
+
+//    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
 }

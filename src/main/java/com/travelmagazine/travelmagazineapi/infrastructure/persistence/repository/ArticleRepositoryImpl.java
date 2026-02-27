@@ -50,4 +50,18 @@ public class ArticleRepositoryImpl implements ArticleRepository {
     public boolean existsById(Long id) {
         return jpaArticleRepository.existsById(id);
     }
+
+    @Override
+    public List<Article> findByCategorySlug(String categorySlug) {
+        return jpaArticleRepository.findByCategorySlug(categorySlug).stream()
+                .map(articleMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Article> searchByTitle(String keyword) {
+        return jpaArticleRepository.findByTitleContainingIgnoreCase(keyword).stream()
+                .map(articleMapper::toDomain)
+                .toList();
+    }
 }

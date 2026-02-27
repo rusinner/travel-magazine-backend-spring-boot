@@ -1,7 +1,9 @@
 package com.travelmagazine.travelmagazineapi.web.api;
 
-import com.travelmagazine.travelmagazineapi.core.application.usecase.CreateUserUseCase;
+import com.travelmagazine.travelmagazineapi.core.application.usecase.RegisterUserUseCase;
 import com.travelmagazine.travelmagazineapi.core.domain.model.User;
+import com.travelmagazine.travelmagazineapi.web.dto.response.UserResponse;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,10 +13,32 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
 
-    private final CreateUserUseCase createUserUseCase;
+    // Χρησιμοποιούμε το RegisterUserUseCase που φτιάξαμε με το BCrypt
+    private final RegisterUserUseCase registerUserUseCase;
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(@RequestBody User user) {
-        return ResponseEntity.ok(createUserUseCase.execute(user));
+    public ResponseEntity<UserResponse> register(@RequestBody RegisterRequest request) {
+        // Εκτελούμε την εγγραφή
+        User user = registerUserUseCase.execute(
+                request.getFullName(),
+                request.getEmail(),
+                request.getPassword()
+        );
+
+        // Επιστρέφουμε UserResponse (DTO) για να ΜΗΝ φανεί το password στο JSON
+        return ResponseEntity.ok(new UserResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getSubscriptionTier().name()
+        ));
+    }
+
+    // Το Request DTO για την εγγραφή
+    @Data
+    public static class RegisterRequest {
+        private String fullName;
+        private String email;
+        private String password;
     }
 }
