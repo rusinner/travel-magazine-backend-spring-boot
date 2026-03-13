@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -24,23 +25,23 @@ public class ArticleController {
     private final SearchArticlesUseCase searchArticlesUseCase;
     private final GetProtectedArticleUseCase getProtectedArticleUseCase;
 
-    // Προσθήκη του Mapper για τη μετατροπή σε DTO
     private final ArticleDtoMapper articleDtoMapper;
 
     // 1. Create
     @PostMapping
-    public ResponseEntity<ArticleResponse> create(@RequestBody ArticleRequest request) {
+    public ResponseEntity<ArticleResponse> create(@RequestBody ArticleRequest request, Principal principal) {
         Article article = createArticleUseCase.execute(
                 request.getTitle(), request.getContent(), request.getMainImageUrl(),
-                request.getCategoryId(), request.getAuthorId(), request.isPremium()
+                request.getCategoryId(), principal.getName(), request.isPremium()
         );
         return ResponseEntity.ok(articleDtoMapper.toResponse(article));
     }
 
-    // 2. Read All
+    // 2. Read All (Protected List)
     @GetMapping
-    public ResponseEntity<List<ArticleResponse>> getAll(@RequestParam(required = false) Long userId) {
-        List<ArticleResponse> responses = getAllArticlesUseCase.execute(userId).stream()
+    public ResponseEntity<List<ArticleResponse>> getAll(Principal principal) {
+        String email = (principal != null) ? principal.getName() : null;
+        List<ArticleResponse> responses = getAllArticlesUseCase.execute(email).stream()
                 .map(articleDtoMapper::toResponse)
                 .toList();
         return ResponseEntity.ok(responses);
@@ -48,11 +49,9 @@ public class ArticleController {
 
     // 3. Read One (SEO Friendly & Protected)
     @GetMapping("/{slug}")
-    public ResponseEntity<ArticleResponse> getBySlug(
-            @PathVariable String slug,
-            @RequestParam(required = false) Long userId) {
-
-        Article article = getProtectedArticleUseCase.execute(slug, userId);
+    public ResponseEntity<ArticleResponse> getBySlug(@PathVariable String slug, Principal principal) {
+        String email = (principal != null) ? principal.getName() : null;
+        Article article = getProtectedArticleUseCase.execute(slug, email);
         return ResponseEntity.ok(articleDtoMapper.toResponse(article));
     }
 
@@ -77,9 +76,10 @@ public class ArticleController {
     @GetMapping("/category/{categorySlug}")
     public ResponseEntity<List<ArticleResponse>> getByCategory(
             @PathVariable String categorySlug,
-            @RequestParam(required = false) Long userId) {
+            Principal principal) {
 
-        List<ArticleResponse> responses = getArticlesByCategoryUseCase.execute(categorySlug, userId).stream()
+        String email = (principal != null) ? principal.getName() : null;
+        List<ArticleResponse> responses = getArticlesByCategoryUseCase.execute(categorySlug, email).stream()
                 .map(articleDtoMapper::toResponse)
                 .toList();
         return ResponseEntity.ok(responses);
@@ -89,9 +89,10 @@ public class ArticleController {
     @GetMapping("/search")
     public ResponseEntity<List<ArticleResponse>> search(
             @RequestParam String q,
-            @RequestParam(required = false) Long userId) {
+            Principal principal) {
 
-        List<ArticleResponse> responses = searchArticlesUseCase.execute(q, userId).stream()
+        String email = (principal != null) ? principal.getName() : null;
+        List<ArticleResponse> responses = searchArticlesUseCase.execute(q, email).stream()
                 .map(articleDtoMapper::toResponse)
                 .toList();
         return ResponseEntity.ok(responses);
@@ -104,6 +105,8 @@ public class ArticleController {
         private String mainImageUrl;
         private Long categoryId;
         private Long authorId;
-        private boolean isPremium;
+        private boolean premium;
+
+
     }
 }

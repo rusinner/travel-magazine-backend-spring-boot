@@ -4,7 +4,7 @@ import com.travelmagazine.travelmagazineapi.core.domain.model.Article;
 import com.travelmagazine.travelmagazineapi.core.domain.model.User;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.ArticleRepository;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.UserRepository;
-import com.travelmagazine.travelmagazineapi.core.domain.service.ArticleSecurityService; // Προσθήκη
+import com.travelmagazine.travelmagazineapi.core.domain.service.ArticleSecurityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,17 +13,17 @@ import org.springframework.stereotype.Service;
 public class GetProtectedArticleUseCase {
     private final ArticleRepository articleRepository;
     private final UserRepository userRepository;
-    private final ArticleSecurityService articleSecurityService; // Προσθήκη
+    private final ArticleSecurityService articleSecurityService;
 
-    public Article execute(String slug, Long currentUserId) {
+    public Article execute(String slug, String email) {
         // 1. Φέρνουμε το άρθρο
         Article article = articleRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Article not found"));
 
-        // 2. Εντοπίζουμε τον χρήστη (αν υπάρχει)
-        User user = (currentUserId != null) ? userRepository.findById(currentUserId).orElse(null) : null;
+        // 2. Εντοπίζουμε τον χρήστη από το email (αν υπάρχει)
+        User user = (email != null) ? userRepository.findByEmail(email).orElse(null) : null;
 
-        // 3. Η ΜΑΓΙΚΗ ΓΡΑΜΜΗ: Ο "φύλακας" εφαρμόζει τους κανόνες για ένα άρθρο
+        // 3. Ο "φύλακας" εφαρμόζει τους κανόνες (Premium check κτλ)
         articleSecurityService.filterArticleContent(article, user);
 
         return article;

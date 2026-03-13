@@ -31,24 +31,33 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Δημόσια Endpoints (Πρόσβαση σε όλους)
+                        // 1. Δημόσια Endpoints - Πρόσβαση σε όλους χωρίς Token
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/register").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
 
-                        // Προστατευμένα Endpoints (Απαιτούν JWT Token)
-                        .requestMatchers("/api/images/upload").authenticated()
+                        // 2. Categories - GET για όλους, POST μόνο για ADMIN
+                        .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/categories/**").hasRole("ADMIN")
 
-                        // Οτιδήποτε άλλο απαιτεί Authentication
+                        // 3. Articles - GET για όλους, POST/PUT/DELETE μόνο για ADMIN
+                        .requestMatchers(HttpMethod.GET, "/api/articles/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/articles/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/articles/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/articles/**").hasRole("ADMIN")
+
+                        // 4. Images - Απαιτείται απλά να είσαι συνδεδεμένος (Authenticated)
+                        .requestMatchers(HttpMethod.POST, "/api/images/upload").hasRole("ADMIN")
+
+                        // 5. Οτιδήποτε άλλο endpoint απαιτεί Authentication
                         .anyRequest().authenticated()
                 )
-                // Stateless session (δεν χρησιμοποιούμε JSESSIONID)
+                // Stateless session (δεν χρησιμοποιούμε JSESSIONID, μόνο JWT)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authenticationProvider(authenticationProvider())
-                // Προσθήκη του JWT Filter ΠΡΙΝ το φίλτρο του Spring
+                // Προσθήκη του JWT Filter ΠΡΙΝ το φίλτρο του Spring Security
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

@@ -15,7 +15,7 @@ public class UpdateArticleUseCase {
     private final CategoryRepository categoryRepository;
     private final ArticleSecurityService articleSecurityService;
 
-    public Article execute(Long id, String title, String content, String mainImageUrl, Long categoryId, boolean isPremium) {
+    public Article execute(Long id, String title, String content, String mainImageUrl, Long categoryId, boolean premium) {
         // 1. Βρίσκουμε το υπάρχον άρθρο
         Article article = articleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Article not found"));
@@ -24,10 +24,14 @@ public class UpdateArticleUseCase {
         article.setTitle(title);
         article.setContent(content);
         article.setMainImageUrl(mainImageUrl);
-        article.setPremium(isPremium);
+        article.setPremium(premium);
 
         // 3. Update Slug (SEO Best Practice: Συγχρονισμός με τον τίτλο)
-        article.setSlug(title.toLowerCase().trim().replaceAll("\\s+", "-"));
+        String cleanSlug = title.toLowerCase()
+                .replaceAll("[^a-z0-9\\s]", "")
+                .trim()
+                .replaceAll("\\s+", "-");
+        article.setSlug(cleanSlug);
 
         // 4. Ενημέρωση κατηγορίας αν έχει αλλάξει
         if (categoryId != null) {

@@ -20,12 +20,12 @@ public class CreateArticleUseCase {
     private final UserRepository userRepository;
 
     // Προσθέσαμε το String mainImageUrl στις παραμέτρους παρακάτω
-    public Article execute(String title, String content, String mainImageUrl, Long categoryId, Long authorId, boolean isPremium) {
+    public Article execute(String title, String content, String mainImageUrl, Long categoryId, String authorEmail, boolean premium) {
 
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
-        User author = userRepository.findById(authorId)
+        User author = userRepository.findByEmail(authorEmail)
                 .orElseThrow(() -> new RuntimeException("Author not found"));
 
         Article article = new Article();
@@ -34,11 +34,15 @@ public class CreateArticleUseCase {
         article.setMainImageUrl(mainImageUrl); // Τώρα η μεταβλητή αναγνωρίζεται!
         article.setCategory(category);
         article.setAuthor(author);
-        article.setPremium(isPremium);
+        article.setPremium(premium);
         article.setCreatedAt(LocalDateTime.now());
 
         // Δημιουργία slug για SEO
-        article.setSlug(title.toLowerCase().replaceAll(" ", "-"));
+        String cleanSlug = title.toLowerCase()
+                .replaceAll("[^a-z0-9\\s]", "") // Αφαιρεί τα πάντα εκτός από γράμματα και αριθμούς
+                .trim()
+                .replaceAll("\\s+", "-"); // Μετατρέπει τα κενά σε παύλες
+        article.setSlug(cleanSlug);
 
         return articleRepository.save(article);
     }

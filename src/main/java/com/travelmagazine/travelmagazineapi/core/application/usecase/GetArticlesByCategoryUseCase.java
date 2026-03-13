@@ -13,17 +13,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GetArticlesByCategoryUseCase {
     private final ArticleRepository articleRepository;
-    private final UserRepository userRepository; // Προσθήκη
-    private final ArticleSecurityService articleSecurityService; // Προσθήκη
+    private final UserRepository userRepository;
+    private final ArticleSecurityService articleSecurityService;
 
-    public List<Article> execute(String categorySlug, Long userId) {
+    public List<Article> execute(String categorySlug, String email) {
         // 1. Φέρνουμε τα άρθρα της συγκεκριμένης κατηγορίας
         List<Article> articles = articleRepository.findByCategorySlug(categorySlug);
 
-        // 2. Εντοπίζουμε τον χρήστη
-        User user = (userId != null) ? userRepository.findById(userId).orElse(null) : null;
+        // 2. Εντοπίζουμε τον χρήστη από το email
+        User user = (email != null) ? userRepository.findByEmail(email).orElse(null) : null;
 
-        // 3. Φιλτράρουμε το περιεχόμενο (κλείδωμα Premium αν χρειάζεται)
+        // 3. Φιλτράρουμε τη λίστα
         articleSecurityService.filterArticleList(articles, user);
 
         return articles;
