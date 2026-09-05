@@ -1,5 +1,6 @@
 package com.travelmagazine.travelmagazineapi.infrastructure.security;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +12,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -34,7 +36,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         final String authHeader = request.getHeader("Authorization");
         final String jwt;
-        final String userEmail;
 
         // 1. Έλεγχος αν υπάρχει το Bearer Token στο Header
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -44,33 +45,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 2. Εξαγωγή του Token
         jwt = authHeader.substring(7);
-        userEmail = jwtService.extractUsername(jwt);
 
-        // 3. Αν υπάρχει email και ο χρήστης δεν είναι ήδη authenticated
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+        // Ένα κατεστραμμένο/ληγμένο/πειραγμένο token δεν πρέπει να ρίχνει το filter chain·
+        // απλώς συνεχίζουμε το request ως μη αυθεντικοποιημένο.
+        try {
+            String userEmail = jwtService.extractUsername(jwt);
 
-            // 4. Αν το token είναι έγκυρο, ενημερώνουμε το SecurityContext
-            if (jwtService.isTokenValid(jwt, userDetails)) {
+            // 3. Αν υπάρχει email και ο χρήστης δεν είναι ήδη authenticated
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
 
-                // --- ΕΔΩ ΕΙΝΑΙ Η ΔΙΟΡΘΩΣΗ ΓΙΑ ΤΟ ROLE ---
-                String role = jwtService.extractClaim(jwt, claims -> claims.get("role", String.class));
-                String authorityName = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+                // 4. Αν το token είναι έγκυρο, ενημερώνουμε το SecurityContext
+                if (jwtService.isTokenValid(jwt, userDetails)) {
 
-                // Δημιουργούμε τη λίστα με το ROLE_ADMIN
-                List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(authorityName));
+                    // --- ΕΔΩ ΕΙΝΑΙ Η ΔΙΟΡΘΩΣΗ ΓΙΑ ΤΟ ROLE ---
+                    String role = jwtService.extractClaim(jwt, claims -> claims.get("role", String.class));
+                    String authorityName = role.startsWith("ROLE_") ? role : "ROLE_" + role;
 
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        authorities
-                );
-                // ---------------------------------------
+                    // Δημιουργούμε τη λίστα με το ROLE_ADMIN
+                    List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(authorityName));
 
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            authorities
+                    );
+                    // ---------------------------------------
+
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
+        } catch (JwtException | IllegalArgumentException | UsernameNotFoundException ex) {
+            SecurityContextHolder.clearContext();
         }
+
         filterChain.doFilter(request, response);
     }
 

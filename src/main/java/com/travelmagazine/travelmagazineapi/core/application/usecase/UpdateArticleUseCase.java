@@ -1,5 +1,6 @@
 package com.travelmagazine.travelmagazineapi.core.application.usecase;
 
+import com.travelmagazine.travelmagazineapi.core.domain.exception.ResourceNotFoundException;
 import com.travelmagazine.travelmagazineapi.core.domain.model.Article;
 import com.travelmagazine.travelmagazineapi.core.domain.model.Category;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.ArticleRepository;
@@ -18,7 +19,7 @@ public class UpdateArticleUseCase {
     public Article execute(Long id, String title, String content, String mainImageUrl, Long categoryId, boolean premium) {
         // 1. Βρίσκουμε το υπάρχον άρθρο
         Article article = articleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Article not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
 
         // 2. Ενημερώνουμε τα βασικά πεδία
         article.setTitle(title);
@@ -36,7 +37,7 @@ public class UpdateArticleUseCase {
         // 4. Ενημέρωση κατηγορίας αν έχει αλλάξει
         if (categoryId != null) {
             Category category = categoryRepository.findById(categoryId)
-                    .orElseThrow(() -> new RuntimeException("Category not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
             article.setCategory(category);
         }
 

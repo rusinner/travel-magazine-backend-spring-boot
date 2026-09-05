@@ -1,5 +1,6 @@
 package com.travelmagazine.travelmagazineapi.core.application.usecase;
 
+import com.travelmagazine.travelmagazineapi.core.domain.exception.ConflictException;
 import com.travelmagazine.travelmagazineapi.core.domain.model.NewsletterSubscriber;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.NewsletterRepository;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,7 @@ public class SubscribeToNewsletterUseCase {
     public NewsletterSubscriber execute(String email) {
         // 1. Έλεγχος αν υπάρχει ήδη (Logic)
         if (newsletterRepository.findByEmail(email).isPresent()) {
-            throw new RuntimeException("Email already subscribed");
+            throw new ConflictException("Email already subscribed");
         }
 
         // 2. Δημιουργία εγγραφής

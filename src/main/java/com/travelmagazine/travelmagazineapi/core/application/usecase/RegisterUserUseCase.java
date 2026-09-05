@@ -1,5 +1,6 @@
 package com.travelmagazine.travelmagazineapi.core.application.usecase;
 
+import com.travelmagazine.travelmagazineapi.core.domain.exception.ConflictException;
 import com.travelmagazine.travelmagazineapi.core.domain.model.User;
 import com.travelmagazine.travelmagazineapi.core.domain.model.enums.UserRole;
 import com.travelmagazine.travelmagazineapi.core.domain.model.enums.SubscriptionTier;
@@ -20,7 +21,7 @@ public class RegisterUserUseCase {
     public User execute(String fullName, String email, String password) {
         // 1. Έλεγχος αν το email χρησιμοποιείται ήδη
         if (userRepository.findByEmail(email).isPresent()) {
-            throw new RuntimeException("Email already exists!");
+            throw new ConflictException("Email already exists!");
         }
 
         // 2. Δημιουργία του User αντικειμένου (Domain Model)

@@ -1,5 +1,6 @@
 package com.travelmagazine.travelmagazineapi.core.application.usecase;
 
+import com.travelmagazine.travelmagazineapi.core.domain.exception.ResourceNotFoundException;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.ArticleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,7 +12,7 @@ public class DeleteArticleUseCase {
 
     public void execute(Long id) {
         if (!articleRepository.existsById(id)) {
-            throw new RuntimeException("Article not found");
+            throw new ResourceNotFoundException("Article not found");
         }
         articleRepository.deleteById(id);
     }

@@ -1,5 +1,6 @@
 package com.travelmagazine.travelmagazineapi.core.application.usecase;
 
+import com.travelmagazine.travelmagazineapi.core.domain.exception.InvalidRequestException;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.ImageStorageRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,7 @@ public class UploadImageUseCase {
 
     public String execute(MultipartFile file) {
         if (file.isEmpty()) {
-            throw new RuntimeException("Cannot upload empty file.");
+            throw new InvalidRequestException("Cannot upload empty file.");
         }
         return imageStorageRepository.store(file);
     }

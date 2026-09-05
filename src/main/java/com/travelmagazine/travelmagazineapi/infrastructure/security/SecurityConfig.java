@@ -25,6 +25,8 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthFilter;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final RestAccessDeniedHandler restAccessDeniedHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -55,6 +57,11 @@ public class SecurityConfig {
                 // Stateless session (δεν χρησιμοποιούμε JSESSIONID, μόνο JWT)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                // Συνεπείς JSON απαντήσεις για 401 (μη αυθεντικοποιημένος) και 403 (χωρίς δικαίωμα)
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                        .accessDeniedHandler(restAccessDeniedHandler)
                 )
                 .authenticationProvider(authenticationProvider())
                 // Προσθήκη του JWT Filter ΠΡΙΝ το φίλτρο του Spring Security

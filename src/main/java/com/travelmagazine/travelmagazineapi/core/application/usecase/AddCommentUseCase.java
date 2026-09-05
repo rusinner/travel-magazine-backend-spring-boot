@@ -1,5 +1,6 @@
 package com.travelmagazine.travelmagazineapi.core.application.usecase;
 
+import com.travelmagazine.travelmagazineapi.core.domain.exception.ResourceNotFoundException;
 import com.travelmagazine.travelmagazineapi.core.domain.model.Comment;
 import com.travelmagazine.travelmagazineapi.core.domain.model.User;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.CommentRepository;
@@ -17,7 +18,7 @@ public class AddCommentUseCase {
     public Comment execute(Long articleId, String text, String userEmail) {
         // 1. Βρίσκουμε τον χρήστη από το email του Token
         User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // 2. Δημιουργούμε το νέο σχόλιο
         Comment comment = new Comment();

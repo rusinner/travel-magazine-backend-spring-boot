@@ -1,5 +1,6 @@
 package com.travelmagazine.travelmagazineapi.core.application.usecase;
 
+import com.travelmagazine.travelmagazineapi.core.domain.exception.ResourceNotFoundException;
 import com.travelmagazine.travelmagazineapi.core.domain.model.Article;
 import com.travelmagazine.travelmagazineapi.core.domain.model.Category;
 import com.travelmagazine.travelmagazineapi.core.domain.model.User;
@@ -23,10 +24,10 @@ public class CreateArticleUseCase {
     public Article execute(String title, String content, String mainImageUrl, Long categoryId, String authorEmail, boolean premium) {
 
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
 
         User author = userRepository.findByEmail(authorEmail)
-                .orElseThrow(() -> new RuntimeException("Author not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Author not found"));
 
         Article article = new Article();
         article.setTitle(title);

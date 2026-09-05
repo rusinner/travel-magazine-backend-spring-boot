@@ -1,5 +1,6 @@
 package com.travelmagazine.travelmagazineapi.core.application.usecase;
 
+import com.travelmagazine.travelmagazineapi.core.domain.exception.ResourceNotFoundException;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.UserRepository;
 import com.travelmagazine.travelmagazineapi.infrastructure.security.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class LoginUseCase {
 
         // 2. Αν ο έλεγχος πετύχει, βρίσκουμε τον χρήστη
         var user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // 3. Δημιουργούμε και επιστρέφουμε το JWT Token
         return jwtService.generateToken(user);

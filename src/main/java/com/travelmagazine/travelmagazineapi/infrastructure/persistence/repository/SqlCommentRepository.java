@@ -1,5 +1,6 @@
 package com.travelmagazine.travelmagazineapi.infrastructure.persistence.repository;
 
+import com.travelmagazine.travelmagazineapi.core.domain.exception.ResourceNotFoundException;
 import com.travelmagazine.travelmagazineapi.core.domain.model.Comment;
 import com.travelmagazine.travelmagazineapi.core.domain.model.User;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.CommentRepository;
@@ -28,12 +29,12 @@ public class SqlCommentRepository implements CommentRepository {
 
         // Σύνδεση με Article Entity
         ArticleEntity articleEntity = jpaArticleRepository.findById(comment.getArticleId())
-                .orElseThrow(() -> new RuntimeException("Article not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
         entity.setArticle(articleEntity);
 
         // Σύνδεση με User Entity
         UserEntity userEntity = jpaUserRepository.findByEmail(comment.getUser().getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         entity.setUser(userEntity);
 
         CommentEntity saved = jpaCommentRepository.save(entity);

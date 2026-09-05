@@ -1,5 +1,6 @@
 package com.travelmagazine.travelmagazineapi.core.application.usecase;
 
+import com.travelmagazine.travelmagazineapi.core.domain.exception.ResourceNotFoundException;
 import com.travelmagazine.travelmagazineapi.core.domain.model.Article;
 import com.travelmagazine.travelmagazineapi.core.domain.model.User;
 import com.travelmagazine.travelmagazineapi.core.domain.repository.ArticleRepository;
@@ -18,7 +19,7 @@ public class GetProtectedArticleUseCase {
     public Article execute(String slug, String email) {
         // 1. Φέρνουμε το άρθρο
         Article article = articleRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Article not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Article not found"));
 
         // 2. Εντοπίζουμε τον χρήστη από το email (αν υπάρχει)
         User user = (email != null) ? userRepository.findByEmail(email).orElse(null) : null;
