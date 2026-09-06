@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/users/register").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/api/newsletter/**").permitAll()
 
                         // 2. Categories - GET για όλους, POST μόνο για ADMIN
                         .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
