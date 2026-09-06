@@ -1,5 +1,91 @@
-### Create a Category
-POST http://localhost:8081/api/categories
+### ============================================================
+### Travel Magazine API - Manual Test Suite
+### Base URL confirmed via Claude Code: http://localhost:8081
+### Maps to TESTS.md's 18-test plan (numbering kept in comments below)
+### Confirmed schemas (via Claude Code, read-only investigation):
+###   - RegisterRequest: fullName, email, password ONLY (no role/subscriptionType -
+###     any extra fields sent are silently ignored; new users always get READER)
+###   - ArticleRequest: title, content, mainImageUrl, categoryId, authorId, premium
+###     (authorId is a dead field - never read by create() or update(), safe to omit)
+### UNCONFIRMED: exact JSON key for the JWT in the login response. The capture
+### script below tries token / jwt / accessToken / access_token automatically.
+### If {{adminToken}} ends up "undefined" when you run a later request, check
+### the raw response body of SETUP 3 and tell me what the actual key is.
+### ============================================================
+
+@baseUrl = http://localhost:8081
+
+### ------------------------------------------------------------
+### SETUP 1 - Register the ADMIN test user
+### Role will default to READER on creation - that's expected.
+### AFTER running this, go run this SQL manually against local Postgres
+### (via IntelliJ Database tool, or ask Claude Code with the exact email):
+###   UPDATE users SET role = 'ADMIN' WHERE email = 'admin@test.local';
+### ------------------------------------------------------------
+POST {{baseUrl}}/api/users/register
+Content-Type: application/json
+
+{
+  "fullName": "Admin Test",
+  "email": "admin@test.local",
+  "password": "AdminPass123!"
+}
+
+### ------------------------------------------------------------
+### SETUP 2 - Register a READER test user (needed for TEST 17 - wrong role)
+### Do NOT promote this one's role - it must stay READER.
+### ------------------------------------------------------------
+POST {{baseUrl}}/api/users/register
+Content-Type: application/json
+
+{
+  "fullName": "Reader Test",
+  "email": "reader@test.local",
+  "password": "ReaderPass123!"
+}
+
+### ------------------------------------------------------------
+### SETUP 3 - Login as ADMIN (run AFTER promoting the role in Postgres)
+### Auto-captures the token into {{adminToken}} for later requests.
+### ------------------------------------------------------------
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.local",
+  "password": "AdminPass123!"
+}
+
+> {%
+    const body = response.body;
+    const token = body.token || body.jwt || body.accessToken || body.access_token;
+    client.global.set("adminToken", token);
+    client.log("adminToken set to: " + token);
+%}
+
+### ------------------------------------------------------------
+### SETUP 4 - Login as READER - captures {{readerToken}}
+### ------------------------------------------------------------
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "reader@test.local",
+  "password": "ReaderPass123!"
+}
+
+> {%
+    const body = response.body;
+    const token = body.token || body.jwt || body.accessToken || body.access_token;
+    client.global.set("readerToken", token);
+%}
+
+### ------------------------------------------------------------
+### SETUP 5 - Create a category to use as categoryId in article tests
+### Auto-captures the created id into {{categoryId}}
+### ------------------------------------------------------------
+POST {{baseUrl}}/api/categories
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
@@ -7,49 +93,203 @@ Content-Type: application/json
   "description": "Explore the beautiful islands and mainland of Greece"
 }
 
-###
+> {%
+    client.global.set("categoryId", response.body.id);
+%}
 
-### Get All Categories
-GET http://localhost:8081/api/categories
-Accept: application/json
 
-### Register a New Admin User
-POST http://localhost:8081/api/users/register
+### ============================================================
+### 404 TESTS
+### ============================================================
+
+### TEST 1 - Article by nonexistent slug -> expect 404
+GET {{baseUrl}}/api/articles/this-slug-does-not-exist
+
+### TEST 2 - Update nonexistent article ID -> expect 404
+PUT {{baseUrl}}/api/articles/999999
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "email": "admin@travelmag.com",
-  "password": "securepassword123",
-  "fullName": "Mavro Admin",
-  "role": "ADMIN",
-  "subscriptionType": "PRO"
+  "title": "x",
+  "content": "y",
+  "mainImageUrl": "",
+  "categoryId": {{categoryId}},
+  "premium": false
 }
 
-### Create a New Article
-POST http://localhost:8081/api/articles
+### TEST 3 - Delete nonexistent article ID -> expect 404
+DELETE {{baseUrl}}/api/articles/999999
+Authorization: Bearer {{adminToken}}
+
+### TEST 4 - Nonexistent category on article creation -> expect 404
+POST {{baseUrl}}/api/articles
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
-  "title": "The Hidden Gems of Crete",
-  "content": "In this article, we explore the south side of Crete...",
-  "categoryId": 1,
-  "authorId": 1,
-  "isPremium": true
+  "title": "Valid Title",
+  "content": "Some content",
+  "mainImageUrl": "",
+  "categoryId": 999999,
+  "premium": false
 }
 
-### Subscribe to Newsletter
-POST http://localhost:8081/api/newsletter/subscribe
+
+### ============================================================
+### 409 TESTS
+### ============================================================
+
+### TEST 5 - Register with existing email -> expect 409
+POST {{baseUrl}}/api/users/register
+Content-Type: application/json
+
+{
+  "fullName": "Duplicate",
+  "email": "admin@test.local",
+  "password": "SomePass123!"
+}
+
+### TEST 6a - Subscribe to newsletter (first time) -> expect success
+POST {{baseUrl}}/api/newsletter/subscribe
 Content-Type: text/plain
 
-"test@example.com"
+"newsletter-fix-check@example.com"
 
-### Upload an Image
-POST http://localhost:8081/api/images/upload
+### TEST 6b - Subscribe same email again -> expect 409
+POST {{baseUrl}}/api/newsletter/subscribe
+Content-Type: text/plain
+
+"already-subscribed@example.com"
+
+### TEST 7a - Create category (first time) -> expect success
+POST {{baseUrl}}/api/categories
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Duplicate Category Test",
+  "description": "..."
+}
+
+### TEST 7b - Create same category name again -> expect 409
+### (this is the DataIntegrityViolationException path, not ConflictException -
+###  CreateCategoryUseCase has no pre-check, so this hits the DB unique constraint)
+POST {{baseUrl}}/api/categories
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Duplicate Category Test",
+  "description": "..."
+}
+
+
+### ============================================================
+### 400 TESTS
+### ============================================================
+
+### TEST 8 - Empty image upload -> expect 400
+### You need an actual 0-byte file next to this .http file first -
+### create an empty file called "empty.png" in the same folder.
+POST {{baseUrl}}/api/images/upload
+Authorization: Bearer {{adminToken}}
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
 --WebAppBoundary
-Content-Disposition: form-data; name="file"; filename="me.png"
-Content-Type: image/jpeg
+Content-Disposition: form-data; name="file"; filename="empty.png"
+Content-Type: image/png
 
-< ./me.png
+< ./empty.png
 --WebAppBoundary--
+
+### TEST 9 - Malformed JSON body -> expect 400
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{"email": "a@b.com", "password": (this is intentionally broken json
+
+### TEST 10 - Missing required query param -> expect 400
+GET {{baseUrl}}/api/articles/search
+
+### TEST 11 - Invalid path variable type -> expect 400
+GET {{baseUrl}}/api/articles/not-a-number/comments
+
+
+### ============================================================
+### 401 TESTS
+### ============================================================
+
+### TEST 12 - Protected endpoint, no Authorization header -> expect 401 (not 403)
+POST {{baseUrl}}/api/categories
+Content-Type: application/json
+
+{
+  "name": "Test",
+  "description": "Test"
+}
+
+### TEST 13 - Malformed/tampered JWT -> expect 401
+POST {{baseUrl}}/api/categories
+Authorization: Bearer not.a.valid.jwt.token
+Content-Type: application/json
+
+{
+  "name": "Test",
+  "description": "Test"
+}
+
+### TEST 14 - Expired JWT -> expect 401
+### Can't be automated in this file - requires temporarily setting
+### jwt.expiration to a few seconds, restarting the app, logging in fresh,
+### waiting for it to lapse, then firing this request. Do separately.
+
+### TEST 15 - Bad login password -> expect 401
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@test.local",
+  "password": "wrong-password"
+}
+
+### TEST 16 - Login with nonexistent email -> expect 401 (same shape as test 15)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "no-such-user@example.com",
+  "password": "whatever"
+}
+
+
+### ============================================================
+### 403 TEST
+### ============================================================
+
+### TEST 17 - Valid JWT, wrong role (READER hitting an ADMIN-only endpoint) -> expect 403
+POST {{baseUrl}}/api/categories
+Authorization: Bearer {{readerToken}}
+Content-Type: application/json
+
+{
+  "name": "Test",
+  "description": "Test"
+}
+
+
+### ============================================================
+### 500 TEST
+### ============================================================
+
+### TEST 18 - Missing title -> triggers real NPE in CreateArticleUseCase -> expect 500
+POST {{baseUrl}}/api/articles
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "content": "Some content",
+  "mainImageUrl": "",
+  "categoryId": {{categoryId}},
+  "premium": false
+}
