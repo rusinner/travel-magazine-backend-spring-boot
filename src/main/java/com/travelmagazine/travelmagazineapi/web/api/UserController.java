@@ -3,6 +3,10 @@ package com.travelmagazine.travelmagazineapi.web.api;
 import com.travelmagazine.travelmagazineapi.core.application.usecase.RegisterUserUseCase;
 import com.travelmagazine.travelmagazineapi.core.domain.model.User;
 import com.travelmagazine.travelmagazineapi.web.dto.response.UserResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +21,7 @@ public class UserController {
     private final RegisterUserUseCase registerUserUseCase;
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         // Εκτελούμε την εγγραφή
         User user = registerUserUseCase.execute(
                 request.getFullName(),
@@ -37,8 +41,16 @@ public class UserController {
     // Το Request DTO για την εγγραφή
     @Data
     public static class RegisterRequest {
+        @NotBlank
+        @Size(min = 2, max = 100)
         private String fullName;
+
+        @NotBlank
+        @Email
         private String email;
+
+        @NotBlank
+        @Size(min = 8, max = 100)
         private String password;
     }
 }

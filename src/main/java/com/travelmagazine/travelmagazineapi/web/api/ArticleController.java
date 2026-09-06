@@ -4,6 +4,9 @@ import com.travelmagazine.travelmagazineapi.core.application.usecase.*;
 import com.travelmagazine.travelmagazineapi.core.domain.model.Article;
 import com.travelmagazine.travelmagazineapi.web.api.mapper.ArticleDtoMapper;
 import com.travelmagazine.travelmagazineapi.web.dto.response.ArticleResponse;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +32,7 @@ public class ArticleController {
 
     // 1. Create
     @PostMapping
-    public ResponseEntity<ArticleResponse> create(@RequestBody ArticleRequest request, Principal principal) {
+    public ResponseEntity<ArticleResponse> create(@Valid @RequestBody ArticleRequest request, Principal principal) {
         Article article = createArticleUseCase.execute(
                 request.getTitle(), request.getContent(), request.getMainImageUrl(),
                 request.getCategoryId(), principal.getName(), request.isPremium()
@@ -57,7 +60,7 @@ public class ArticleController {
 
     // 4. Update
     @PutMapping("/{id}")
-    public ResponseEntity<ArticleResponse> update(@PathVariable Long id, @RequestBody ArticleRequest request) {
+    public ResponseEntity<ArticleResponse> update(@PathVariable Long id, @Valid @RequestBody ArticleRequest request) {
         Article article = updateArticleUseCase.execute(
                 id, request.getTitle(), request.getContent(), request.getMainImageUrl(),
                 request.getCategoryId(), request.isPremium()
@@ -100,10 +103,17 @@ public class ArticleController {
 
     @Data
     public static class ArticleRequest {
+        @NotBlank
         private String title;
+
+        @NotBlank
         private String content;
+
         private String mainImageUrl;
+
+        @NotNull
         private Long categoryId;
+
         private Long authorId;
         private boolean premium;
 

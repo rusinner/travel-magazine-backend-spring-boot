@@ -3,6 +3,9 @@ package com.travelmagazine.travelmagazineapi.web.api;
 import com.travelmagazine.travelmagazineapi.core.application.usecase.AddCommentUseCase;
 import com.travelmagazine.travelmagazineapi.core.application.usecase.GetCommentsByArticleUseCase;
 import com.travelmagazine.travelmagazineapi.core.domain.model.Comment;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,7 +28,7 @@ public class CommentController {
     @PostMapping
     public ResponseEntity<CommentResponse> addComment(
             @PathVariable Long articleId,
-            @RequestBody CommentRequest request,
+            @Valid @RequestBody CommentRequest request,
             Principal principal) {
 
         if (principal == null) {
@@ -59,6 +62,8 @@ public class CommentController {
     @Data
     @NoArgsConstructor
     public static class CommentRequest {
+        @NotBlank
+        @Size(max = 2000)
         private String text;
     }
 

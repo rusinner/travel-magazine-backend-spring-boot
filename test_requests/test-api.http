@@ -98,6 +98,7 @@ Content-Type: application/json
 %}
 
 
+
 ### ============================================================
 ### 404 TESTS
 ### ============================================================
@@ -293,3 +294,37 @@ Content-Type: application/json
   "categoryId": {{categoryId}},
   "premium": false
 }
+
+
+
+### ============================================================
+### BEAN VALIDATION VERIFICATION TESTS
+### ============================================================
+
+### TEST V1 - Missing title (was TEST 18, now expect 400 not 500)
+POST {{baseUrl}}/api/articles
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "content": "Some content",
+  "mainImageUrl": "",
+  "categoryId": {{categoryId}},
+  "premium": false
+}
+
+### TEST V2 - Invalid email on register -> expect 400
+POST {{baseUrl}}/api/users/register
+Content-Type: application/json
+
+{
+  "fullName": "Test",
+  "email": "not-an-email",
+  "password": "SomePass123!"
+}
+
+### TEST V3 - Invalid email on newsletter subscribe -> expect 400
+POST {{baseUrl}}/api/newsletter/subscribe
+Content-Type: text/plain
+
+"not-an-email"
